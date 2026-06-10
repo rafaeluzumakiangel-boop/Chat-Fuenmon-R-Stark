@@ -8,61 +8,72 @@
 </head>
 <body>
     <div class="chat-container">
-        <header>
-            <h2> Panel de Comunicación Interna</h2>
+        <div class="chat-header">
+            <h2>Panel de Comunicación Interno</h2>
             <p>Proyecto Universitario</p>
-        </header>
+        </div>
 
-        <!-- Zona donde aparecerán los mensajes -->
-        <div id="chat-messages" class="messages-area"></div>
+        <div id="messages" class="messages-area">
+            </div>
 
-        <!-- Formulario para enviar mensajes e información -->
-        <form id="chat-form" class="input-area">
-            <input type="text" id="username" placeholder="Tu Nombre/Cargo..." required>
-            <input type="text" id="message" placeholder="Escribe un mensaje o comparte informacion..." required autocomplete="off">
-            <button type="submit">Enviar</button>
+        <form id="chat-form" class="chat-form">
+            <input type="text" id="username" placeholder="Tu Nombre..." required autocomplete="off">
+            <input type="text" id="message-input" placeholder="Escribe un mensaje o comparte informacion..." required autocomplete="off">
+            <button type="submit" id="send-btn">Enviar</button>
         </form>
     </div>
 
-    <!-- Carga de la librería de Socket.io que provee el servidor -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const form = document.getElementById('chat-form');
-        const messageInput = document.getElementById('message');
-        const usernameInput = document.getElementById('username');
-        const messagesArea = document.getElementById('chat-messages');
 
-        form.addEventListener('submit', (e) => {
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const usernameInput = document.getElementById('username');
+        const messagesArea = document.getElementById('messages');
+
+        // Escuchar cuando se envía un mensaje desde el formulario
+        chatForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            if (messageInput.value && usernameInput.value) {
-                // Estructura de los datos que se van a enviar
+
+            const user = usernameInput.value.trim();
+            const text = messageInput.value.trim();
+
+            if (user && text) {
+                // Generar hora formateada en formato de 12 horas (a.m. / p.m.)
+                const ahora = new Date();
+                let horas = ahora.getHours();
+                const minutos = ahora.getMinutes().toString().padStart(2, '0');
+                const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
+                horas = horas % 12;
+                horas = horas ? horas : 12; 
+                const horaFormateada = `${horas}:${minutos} ${ampm}`;
+
                 const data = {
-                    user: usernameInput.value,
-                    text: messageInput.value,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    user: user,
+                    text: text,
+                    time: horaFormateada
                 };
 
-                // Enviar evento al servidor
+                // Enviar datos al servidor
                 socket.emit('chat message', data);
-                
-                // Limpiar solo el campo de mensaje (para dejar el nombre fijo)
+
+                // Limpiar la barra donde se escribe el mensaje
                 messageInput.value = '';
             }
         });
 
-        // Escuchar los mensajes que vienen del servidor
+        // Escuchar los mensajes que el servidor envía (tanto nuevos como el historial)
         socket.on('chat message', (data) => {
             const item = document.createElement('div');
             item.classList.add('message-block');
             item.innerHTML = `
-                <span class="meta"><strong>${data.user}</strong> u00b7 ${data.time}</span>
+                <span class="meta"><strong>${data.user}</strong> &middot; ${data.time}</span>
                 <p class="text">${data.text}</p>
             `;
             messagesArea.appendChild(item);
-            
-            // Auto-scroll hacia abajo para ver el último mensaje
+
+            // Mantener el scroll siempre abajo en el último mensaje
             messagesArea.scrollTop = messagesArea.scrollHeight;
         });
     </script>
