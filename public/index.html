@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Corporativo - Canal Interno</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header>
+            <h2> Panel de Comunicación Interna</h2>
+            <p>Proyecto Universitario</p>
+        </header>
+
+        <!-- Zona donde aparecerán los mensajes -->
+        <div id="chat-messages" class="messages-area"></div>
+
+        <!-- Formulario para enviar mensajes e información -->
+        <form id="chat-form" class="input-area">
+            <input type="text" id="username" placeholder="Tu Nombre/Cargo..." required>
+            <input type="text" id="message" placeholder="Escribe un mensaje o comparte informacion..." required autocomplete="off">
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+
+    <!-- Carga de la librería de Socket.io que provee el servidor -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const form = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message');
+        const usernameInput = document.getElementById('username');
+        const messagesArea = document.getElementById('chat-messages');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            if (messageInput.value && usernameInput.value) {
+                // Estructura de los datos que se van a enviar
+                const data = {
+                    user: usernameInput.value,
+                    text: messageInput.value,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+
+                // Enviar evento al servidor
+                socket.emit('chat message', data);
+                
+                // Limpiar solo el campo de mensaje (para dejar el nombre fijo)
+                messageInput.value = '';
+            }
+        });
+
+        // Escuchar los mensajes que vienen del servidor
+        socket.on('chat message', (data) => {
+            const item = document.createElement('div');
+            item.classList.add('message-block');
+            item.innerHTML = `
+                <span class="meta"><strong>${data.user}</strong> u00b7 ${data.time}</span>
+                <p class="text">${data.text}</p>
+            `;
+            messagesArea.appendChild(item);
+            
+            // Auto-scroll hacia abajo para ver el último mensaje
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        });
+    </script>
+</body>
+</html>
